@@ -162,11 +162,13 @@ if report_file and statement_files:
     col1, col2 = st.columns([1, 1])
     with col1:
         show_invoices = st.button("📄 ანგარიშფაქტურები")
+    if 'show_invoices' not in st.session_state:
+        st.session_state['show_invoices'] = False
     with col2:
         show_transactions = st.button("💵 ჩარიცხვები")
 
     # Invoices view
-    if show_invoices:
+    if st.session_state.get('show_invoices') or show_invoices:
         if st.session_state['selected_company_id'] is None:
             st.subheader("📋 კომპანიების ყჩამონათვალი")
             search_code = st.text_input("🔎 ჩაწერე საიდენტიფიკაციო კოდი:", "")
@@ -201,7 +203,11 @@ if report_file and statement_files:
                         st.write(name)
                     with col2:
                         if st.button(cid, key=f"cid_{cid}"):
+                        st.session_state['show_invoices'] = True
+                        st.session_state['keep_state'] = True
+                        st.experimental_rerun()
                             st.session_state['selected_company_id'] = cid
+                            st.write(f"Selected company ID: {cid}")  # Debug
                     with col3:
                         st.write(f"{invoice_sum:,.2f}")
                     with col4:
@@ -209,19 +215,22 @@ if report_file and statement_files:
                     with col5:
                         st.write(f"{diff:,.2f}")
 
-            st.download_button(
-                label="⬇️ ჩამოტვირთე Excel ფაილი",
-                data=output,
-                file_name="ანგარიშფაქტურები.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-        else:
-            cid = st.session_state['selected_company_id']
-            company_data = purchases_df[purchases_df['საიდენტიფიკაციო კოდი'] == cid]
-            st.subheader(f"📌 დეტალური ანგარიშფაქტურები: {cid}")
-            st.dataframe(company_data, use_container_width=True)
-            if st.button("⬅️ დაბრუნება"):
-                st.session_state['selected_company_id'] = None
+                # Check for selected company and display details
+                if st.session_state['selected_company_id'] is not None:
+                    cid = st.session_state['selected_company_id']
+                    company_data = purchases_df[purchases_df['საიდენტიფიკაციო კოდი'] == cid]
+                    st.subheader(f"📌 დეტალური ანგარიშფაქტურები: {cid}")
+                    st.dataframe(company_data, use_container_width=True)
+                    if st.button("⬅️ დაბრუნება"):
+                st.session_state['show_invoices'] = False
+                        st.session_state['selected_company_id'] = None
+
+        st.download_button(
+            label="⬇️ ჩამოტვირთე Excel ფაილი",
+            data=output,
+            file_name="ანგარიშფაქტურები.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
     # Transactions view
     if show_transactions:
@@ -277,16 +286,20 @@ if report_file and statement_files:
                         with col2:
                             if st.button(str(item[1]), key=f"mid_{item[1]}"):
                                 st.session_state['selected_missing_company'] = item[1]
+                                st.write(f"Selected missing company ID: {item[1]}")  # Debug
                         with col3:
                             st.write(f"{item[2]:,.2f}")
                         with col4:
                             st.write(f"{item[3]:,.2f}")
                         with col5:
                             st.write(f"{item[4]:,.2f}")
-        else:
-            mid = st.session_state['selected_missing_company']
-            transaction_data = bank_df[bank_df['P'] == str(mid)]
-            st.subheader(f"📌 ჩარიცხვების ცხრილი: {mid}")
-            st.dataframe(transaction_data, use_container_width=True)
-            if st.button("⬅️ დაბრუნება"):
-                st.session_state['selected_missing_company'] = None
+
+                    # Check for selected missing company and display details
+                    if st.session_state['selected_missing_company'] is not None:
+                        mid = st.session_state['selected_missing_company']
+                        transaction_data = bank_df[bank_df['P'] == str(mid)]
+                        st.subheader(f"📌 ჩარიცხვების ცხრილი: {mid}")
+                        st.dataframe(transaction_data, use_container_width=True)
+                        if st.button("⬅️ დაბრუნება"):
+                st.session_state['show_invoices'] = False
+                            st.session_state['selected_missing_company'] = None
