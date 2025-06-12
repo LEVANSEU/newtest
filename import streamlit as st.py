@@ -159,14 +159,19 @@ if report_file and statement_files:
     output.seek(0)
 
     # Buttons for navigation
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        show_invoices = st.button("📄 ანგარიშფაქტურები")
-    with col2:
-        show_transactions = st.button("💵 ჩარიცხვები")
+    if 'view' not in st.session_state:
+    st.session_state['view'] = None
+
+col1, col2 = st.columns([1, 1])
+with col1:
+    if st.button("📄 ანგარიშფაქტურები"):
+        st.session_state['view'] = 'invoices'
+with col2:
+    if st.button("💵 ჩარიცხვები"):
+        st.session_state['view'] = 'transactions' 
 
     # Invoices view
-    if show_invoices:
+    if st.session_state['view'] == 'invoices':
         if st.session_state['selected_company_id'] is None:
             st.subheader("📋 კომპანიების ყჩამონათვალი")
             search_code = st.text_input("🔎 ჩაწერე საიდენტიფიკაციო კოდი:", "")
