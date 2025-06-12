@@ -162,13 +162,11 @@ if report_file and statement_files:
     col1, col2 = st.columns([1, 1])
     with col1:
         show_invoices = st.button("📄 ანგარიშფაქტურები")
-    if 'show_invoices' not in st.session_state:
-        st.session_state['show_invoices'] = False
     with col2:
         show_transactions = st.button("💵 ჩარიცხვები")
 
     # Invoices view
-    if st.session_state.get('show_invoices') or show_invoices:
+    if show_invoices:
         if st.session_state['selected_company_id'] is None:
             st.subheader("📋 კომპანიების ყჩამონათვალი")
             search_code = st.text_input("🔎 ჩაწერე საიდენტიფიკაციო კოდი:", "")
@@ -203,9 +201,6 @@ if report_file and statement_files:
                         st.write(name)
                     with col2:
                         if st.button(cid, key=f"cid_{cid}"):
-                        st.session_state['show_invoices'] = True
-                        st.session_state['keep_state'] = True
-                        st.experimental_rerun()
                             st.session_state['selected_company_id'] = cid
                             st.write(f"Selected company ID: {cid}")  # Debug
                     with col3:
@@ -222,7 +217,6 @@ if report_file and statement_files:
                     st.subheader(f"📌 დეტალური ანგარიშფაქტურები: {cid}")
                     st.dataframe(company_data, use_container_width=True)
                     if st.button("⬅️ დაბრუნება"):
-                st.session_state['show_invoices'] = False
                         st.session_state['selected_company_id'] = None
 
         st.download_button(
@@ -301,5 +295,4 @@ if report_file and statement_files:
                         st.subheader(f"📌 ჩარიცხვების ცხრილი: {mid}")
                         st.dataframe(transaction_data, use_container_width=True)
                         if st.button("⬅️ დაბრუნება"):
-                st.session_state['show_invoices'] = False
                             st.session_state['selected_missing_company'] = None
