@@ -161,9 +161,13 @@ if report_file and statement_files:
     # Buttons for navigation
     col1, col2 = st.columns([1, 1])
     with col1:
-        show_invoices = st.button("📄 ანგარიშფაქტურები")
+        if st.button("📄 ანგარიშფაქტურები"):
+            st.session_state["active_view"] = "invoices"
+            st.session_state["selected_company_id"] = None  # reset when switching view
     with col2:
-        show_transactions = st.button("💵 ჩარიცხვები")
+        if st.button("💵 ჩარიცხვები"):
+            st.session_state["active_view"] = "transactions"
+            st.session_state["selected_missing_company"] = None  # reset when switching view
 
     # Invoices view
     if show_invoices:
