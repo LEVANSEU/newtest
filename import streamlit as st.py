@@ -159,8 +159,8 @@ if report_file and statement_files:
     output.seek(0)
 
     # Buttons for navigation
-    if 'view' not in st.session_state:
-    st.session_state['view'] = None
+    if some_condition:
+        st.session_state['view'] = None
 
 col1, col2 = st.columns([1, 1])
 with col1:
