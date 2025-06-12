@@ -192,30 +192,31 @@ if report_file and statement_files:
             </div>
             """, unsafe_allow_html=True)
 
-            # Use st.empty to update the table dynamically
-            table_placeholder = st.empty()
-            with table_placeholder.container():
-                for name, cid, invoice_sum, paid_sum, diff in filtered:
-                    col1, col2, col3, col4, col5 = st.columns([2, 2, 1.5, 1.5, 1.5])
-                    with col1:
-                        st.write(name)
-                    with col2:
-                        if st.button(cid, key=f"cid_{cid}"):
-                            st.session_state['selected_company_id'] = cid
-                            st.write(f"Selected company ID: {cid}")  # Debug
-                    with col3:
-                        st.write(f"{invoice_sum:,.2f}")
-                    with col4:
-                        st.write(f"{paid_sum:,.2f}")
-                    with col5:
-                        st.write(f"{diff:,.2f}")
-        else:
-            cid = st.session_state['selected_company_id']
-            company_data = purchases_df[purchases_df['საიდენტიფიკაციო კოდი'] == cid]
-            st.subheader(f"📌 დეტალური ანგარიშფაქტურები: {cid}")
-            st.dataframe(company_data, use_container_width=True)
-            if st.button("⬅️ დაბრუნება"):
-                st.session_state['selected_company_id'] = None
+            # Dynamic update without rerun
+            detail_placeholder = st.empty()
+            with detail_placeholder.container():
+                if st.session_state['selected_company_id'] is None:
+                    for name, cid, invoice_sum, paid_sum, diff in filtered:
+                        col1, col2, col3, col4, col5 = st.columns([2, 2, 1.5, 1.5, 1.5])
+                        with col1:
+                            st.write(name)
+                        with col2:
+                            if st.button(cid, key=f"cid_{cid}"):
+                                st.session_state['selected_company_id'] = cid
+                                st.write(f"Selected company ID: {cid}")  # Debug
+                        with col3:
+                            st.write(f"{invoice_sum:,.2f}")
+                        with col4:
+                            st.write(f"{paid_sum:,.2f}")
+                        with col5:
+                            st.write(f"{diff:,.2f}")
+                else:
+                    cid = st.session_state['selected_company_id']
+                    company_data = purchases_df[purchases_df['საიდენტიფიკაციო კოდი'] == cid]
+                    st.subheader(f"📌 დეტალური ანგარიშფაქტურები: {cid}")
+                    st.dataframe(company_data, use_container_width=True)
+                    if st.button("⬅️ დაბრუნება"):
+                        st.session_state['selected_company_id'] = None
 
         st.download_button(
             label="⬇️ ჩამოტვირთე Excel ფაილი",
@@ -268,29 +269,28 @@ if report_file and statement_files:
                 </div>
                 """, unsafe_allow_html=True)
 
-                # Use st.empty to update the table dynamically
-                table_placeholder = st.empty()
-                with table_placeholder.container():
-                    for item in missing_data:
-                        col1, col2, col3, col4, col5 = st.columns([2, 2, 1.5, 1.5, 1.5])
-                        with col1:
-                            st.write(item[0])
-                        with col2:
-                            if st.button(str(item[1]), key=f"mid_{item[1]}"):
-                                st.session_state['selected_missing_company'] = item[1]
-                                st.write(f"Selected missing company ID: {item[1]}")  # Debug
-                        with col3:
-                            st.write(f"{item[2]:,.2f}")
-                        with col4:
-                            st.write(f"{item[3]:,.2f}")
-                        with col5:
-                            st.write(f"{item[4]:,.2f}")
-            else:
-                st.info("ყველა კომპანია ანგარიშფაქტურის სიაში გამოჩნდა.")
-        else:
-            mid = st.session_state['selected_missing_company']
-            transaction_data = bank_df[bank_df['P'] == str(mid)]
-            st.subheader(f"📌 ჩარიცხვების ცხრილი: {mid}")
-            st.dataframe(transaction_data, use_container_width=True)
-            if st.button("⬅️ დაბრუნება"):
-                st.session_state['selected_missing_company'] = None
+                # Dynamic update without rerun
+                detail_placeholder = st.empty()
+                with detail_placeholder.container():
+                    if st.session_state['selected_missing_company'] is None:
+                        for item in missing_data:
+                            col1, col2, col3, col4, col5 = st.columns([2, 2, 1.5, 1.5, 1.5])
+                            with col1:
+                                st.write(item[0])
+                            with col2:
+                                if st.button(str(item[1]), key=f"mid_{item[1]}"):
+                                    st.session_state['selected_missing_company'] = item[1]
+                                    st.write(f"Selected missing company ID: {item[1]}")  # Debug
+                            with col3:
+                                st.write(f"{item[2]:,.2f}")
+                            with col4:
+                                st.write(f"{item[3]:,.2f}")
+                            with col5:
+                                st.write(f"{item[4]:,.2f}")
+                    else:
+                        mid = st.session_state['selected_missing_company']
+                        transaction_data = bank_df[bank_df['P'] == str(mid)]
+                        st.subheader(f"📌 ჩარიცხვების ცხრილი: {mid}")
+                        st.dataframe(transaction_data, use_container_width=True)
+                        if st.button("⬅️ დაბრუნება"):
+                            st.session_state['selected_missing_company'] = None
