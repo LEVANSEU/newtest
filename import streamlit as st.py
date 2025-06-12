@@ -88,6 +88,12 @@ st.markdown("""
 
 st.title("Excel გენერატორი")
 
+# Initialize session state
+if 'selected_company_id' not in st.session_state:
+    st.session_state['selected_company_id'] = None
+if 'selected_missing_company' not in st.session_state:
+    st.session_state['selected_missing_company'] = None
+
 report_file = st.file_uploader("ატვირთე ანგარიშფაქტურების ფაილი (report.xlsx)", type=["xlsx"])
 statement_files = st.file_uploader("ატვირთე საბანკო ამონაწერის ფაილები (statement.xlsx)", type=["xlsx"], accept_multiple_files=True)
 
@@ -152,12 +158,6 @@ if report_file and statement_files:
     wb.save(output)
     output.seek(0)
 
-    # Initialize selected_company_id if not present
-    if 'selected_company_id' not in st.session_state:
-        st.session_state['selected_company_id'] = None
-    if 'selected_missing_company' not in st.session_state:
-        st.session_state['selected_missing_company'] = None
-
     # Buttons for navigation
     col1, col2 = st.columns([1, 1])
     with col1:
@@ -168,7 +168,7 @@ if report_file and statement_files:
     # Invoices view
     if show_invoices:
         if st.session_state['selected_company_id'] is None:
-            st.subheader("📋 კომპანიების ჩამონათვალი")
+            st.subheader("📋 კომპანიების ყჩამონათვალი")
             search_code = st.text_input("🔎 ჩაწერე საიდენტიფიკაციო კოდი:", "")
             sort_column = st.selectbox("📊 დალაგების ველი", ["ინვოისების ჯამი", "ჩარიცხვა", "სხვაობა"])
             sort_order = st.radio("⬆️⬇️ დალაგების ტიპი", ["ზრდადობით", "კლებადობით"], horizontal=True)
@@ -195,18 +195,17 @@ if report_file and statement_files:
             for name, cid, invoice_sum, paid_sum, diff in filtered:
                 col1, col2, col3, col4, col5 = st.columns([2, 2, 1.5, 1.5, 1.5])
                 with col1:
-                    st.markdown(name)
+                    st.write(name)
                 with col2:
                     if st.button(cid, key=f"cid_{cid}"):
                         st.session_state['selected_company_id'] = cid
                         st.write(f"Selected company ID: {cid}")  # Debug
-                        st.experimental_rerun()  # Rerun to show details
                 with col3:
-                    st.markdown(f"<div class='number-cell'>{invoice_sum:,.2f}</div>", unsafe_allow_html=True)
+                    st.write(f"{invoice_sum:,.2f}")
                 with col4:
-                    st.markdown(f"<div class='number-cell'>{paid_sum:,.2f}</div>", unsafe_allow_html=True)
+                    st.write(f"{paid_sum:,.2f}")
                 with col5:
-                    st.markdown(f"<div class='number-cell'>{diff:,.2f}</div>", unsafe_allow_html=True)
+                    st.write(f"{diff:,.2f}")
         else:
             cid = st.session_state['selected_company_id']
             company_data = purchases_df[purchases_df['საიდენტიფიკაციო კოდი'] == cid]
@@ -214,7 +213,7 @@ if report_file and statement_files:
             st.dataframe(company_data, use_container_width=True)
             if st.button("⬅️ დაბრუნება"):
                 st.session_state['selected_company_id'] = None
-                st.experimental_rerun()
+                st.rerun()  # Use rerun instead of experimental_rerun
 
         st.download_button(
             label="⬇️ ჩამოტვირთე Excel ფაილი",
@@ -275,7 +274,7 @@ if report_file and statement_files:
                         if st.button(str(item[1]), key=f"mid_{item[1]}"):
                             st.session_state['selected_missing_company'] = item[1]
                             st.write(f"Selected missing company ID: {item[1]}")  # Debug
-                            st.experimental_rerun()
+                            st.rerun()  # Use rerun instead of experimental_rerun
                     with col3:
                         st.write(f"{item[2]:,.2f}")
                     with col4:
@@ -291,4 +290,4 @@ if report_file and statement_files:
             st.dataframe(transaction_data, use_container_width=True)
             if st.button("⬅️ დაბრუნება"):
                 st.session_state['selected_missing_company'] = None
-                st.experimental_rerun()
+                st.rerun()  # Use rerun instead of experimental_rerun
