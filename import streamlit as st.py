@@ -192,20 +192,23 @@ if report_file and statement_files:
             </div>
             """, unsafe_allow_html=True)
 
-            for name, cid, invoice_sum, paid_sum, diff in filtered:
-                col1, col2, col3, col4, col5 = st.columns([2, 2, 1.5, 1.5, 1.5])
-                with col1:
-                    st.write(name)
-                with col2:
-                    if st.button(cid, key=f"cid_{cid}"):
-                        st.session_state['selected_company_id'] = cid
-                        st.write(f"Selected company ID: {cid}")  # Debug
-                with col3:
-                    st.write(f"{invoice_sum:,.2f}")
-                with col4:
-                    st.write(f"{paid_sum:,.2f}")
-                with col5:
-                    st.write(f"{diff:,.2f}")
+            # Use st.empty to update the table dynamically
+            table_placeholder = st.empty()
+            with table_placeholder.container():
+                for name, cid, invoice_sum, paid_sum, diff in filtered:
+                    col1, col2, col3, col4, col5 = st.columns([2, 2, 1.5, 1.5, 1.5])
+                    with col1:
+                        st.write(name)
+                    with col2:
+                        if st.button(cid, key=f"cid_{cid}"):
+                            st.session_state['selected_company_id'] = cid
+                            st.write(f"Selected company ID: {cid}")  # Debug
+                    with col3:
+                        st.write(f"{invoice_sum:,.2f}")
+                    with col4:
+                        st.write(f"{paid_sum:,.2f}")
+                    with col5:
+                        st.write(f"{diff:,.2f}")
         else:
             cid = st.session_state['selected_company_id']
             company_data = purchases_df[purchases_df['საიდენტიფიკაციო კოდი'] == cid]
@@ -213,7 +216,6 @@ if report_file and statement_files:
             st.dataframe(company_data, use_container_width=True)
             if st.button("⬅️ დაბრუნება"):
                 st.session_state['selected_company_id'] = None
-                st.rerun()  # Use rerun instead of experimental_rerun
 
         st.download_button(
             label="⬇️ ჩამოტვირთე Excel ფაილი",
@@ -266,21 +268,23 @@ if report_file and statement_files:
                 </div>
                 """, unsafe_allow_html=True)
 
-                for item in missing_data:
-                    col1, col2, col3, col4, col5 = st.columns([2, 2, 1.5, 1.5, 1.5])
-                    with col1:
-                        st.write(item[0])
-                    with col2:
-                        if st.button(str(item[1]), key=f"mid_{item[1]}"):
-                            st.session_state['selected_missing_company'] = item[1]
-                            st.write(f"Selected missing company ID: {item[1]}")  # Debug
-                            st.rerun()  # Use rerun instead of experimental_rerun
-                    with col3:
-                        st.write(f"{item[2]:,.2f}")
-                    with col4:
-                        st.write(f"{item[3]:,.2f}")
-                    with col5:
-                        st.write(f"{item[4]:,.2f}")
+                # Use st.empty to update the table dynamically
+                table_placeholder = st.empty()
+                with table_placeholder.container():
+                    for item in missing_data:
+                        col1, col2, col3, col4, col5 = st.columns([2, 2, 1.5, 1.5, 1.5])
+                        with col1:
+                            st.write(item[0])
+                        with col2:
+                            if st.button(str(item[1]), key=f"mid_{item[1]}"):
+                                st.session_state['selected_missing_company'] = item[1]
+                                st.write(f"Selected missing company ID: {item[1]}")  # Debug
+                        with col3:
+                            st.write(f"{item[2]:,.2f}")
+                        with col4:
+                            st.write(f"{item[3]:,.2f}")
+                        with col5:
+                            st.write(f"{item[4]:,.2f}")
             else:
                 st.info("ყველა კომპანია ანგარიშფაქტურის სიაში გამოჩნდა.")
         else:
@@ -290,4 +294,3 @@ if report_file and statement_files:
             st.dataframe(transaction_data, use_container_width=True)
             if st.button("⬅️ დაბრუნება"):
                 st.session_state['selected_missing_company'] = None
-                st.rerun()  # Use rerun instead of experimental_rerun
