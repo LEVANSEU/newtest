@@ -9,7 +9,7 @@ st.markdown("""
     <style>
         body, .main, .block-container {
             background-color: white !important;
-            color: #222 !important;
+            color: #222 !important; /* Default text color */
             font-family: 'Segoe UI', sans-serif;
         }
         h1, h2, h3, h4, h5, h6, .stMarkdown, .stText, .stTextLabelWrapper, label {
@@ -63,6 +63,7 @@ st.markdown("""
             font-weight: bold;
             color: #222;
         }
+        /* Ensure table text is visible and numbers aligned right on white background */
         .stTable {
             color: #222 !important;
         }
@@ -70,11 +71,12 @@ st.markdown("""
             color: #222 !important;
             background-color: white !important;
         }
-        .stTable td:nth-child(n+3), .stTable th:nth-child(n+3) {
+        .stTable td:nth-child(n+3), .stTable th:nth-child(n+3) { /* Apply to numeric columns (3rd and beyond) */
             text-align: right !important;
             font-variant-numeric: tabular-nums;
             padding-right: 1rem;
         }
+        /* Ensure write output and other elements are visible */
         .stMarkdown, .stWrite {
             color: #222 !important;
         }
@@ -106,19 +108,21 @@ if report_file and statement_files:
 
     # Process multiple bank statement files
     bank_dfs = []
-    for statement_file in statement_files:
-        try:
-            st.write(f"Processing statement file: {statement_file.name}")
-            df = pd.read_excel(statement_file)
-            st.write(f"Raw df head for {statement_file.name}:", df.head())
-            df['P'] = df.iloc[:, 15].astype(str).str.strip()
-            df['Name'] = df.iloc[:, 14].astype(str).str.strip()
-            df['Amount'] = pd.to_numeric(df.iloc[:, 3], errors='coerce').fillna(0)
-            bank_dfs.append(df)
-        except Exception as e:
-            st.error(f"Error reading statement file {statement_file.name}: {str(e)}")
-            continue
+    if statement_files:
+        for statement_file in statement_files:
+            try:
+                st.write(f"Processing statement file: {statement_file.name}")
+                df = pd.read_excel(statement_file)
+                st.write(f"Raw df head for {statement_file.name}:", df.head())
+                df['P'] = df.iloc[:, 15].astype(str).str.strip()  # Identification code
+                df['Name'] = df.iloc[:, 14].astype(str).str.strip()  # Name from column O
+                df['Amount'] = pd.to_numeric(df.iloc[:, 3], errors='coerce').fillna(0)  # Amount from column D
+                bank_dfs.append(df)
+            except Exception as e:
+                st.error(f"Error reading statement file {statement_file.name}: {str(e)}")
+                continue
     
+    # Combine all bank statement DataFrames
     bank_df = pd.concat(bank_dfs, ignore_index=True) if bank_dfs else pd.DataFrame()
     st.write("bank_df head:", bank_df.head())
 
@@ -127,24 +131,28 @@ if report_file and statement_files:
 
     wb = Workbook()
     wb.remove(wb.active)
+
     ws1 = wb.create_sheet(title="ანგარიშფაქტურები კომპანიით")
     ws1.append(['დასახელება', 'საიდენტიფიკაციო კოდი', 'ანგარიშფაქტურების ჯამი', 'ჩარიცხული თანხა', 'სხვაობა'])
 
     company_summaries = []
+
     for company_id, group in purchases_df.groupby('საიდენტიფიკაციო კოდი'):
         try:
             company_name = group['დასახელება'].iloc[0]
             unique_invoices = group.groupby('სერია №')['ღირებულება დღგ და აქციზის ჩათვლით'].sum().reset_index()
             company_invoice_sum = unique_invoices['ღირებულება დღგ და აქციზის ჩათვლით'].sum()
+
             paid_sum = bank_df[bank_df["P"] == str(company_id)]['Amount'].sum()
             difference = company_invoice_sum - paid_sum
+
             ws1.append([company_name, company_id, company_invoice_sum, paid_sum, difference])
             company_summaries.append((company_name, company_id, company_invoice_sum, paid_sum, difference))
         except Exception as e:
             st.error(f"Error processing company {company_id}: {str(e)}")
             continue
 
-    st.write("company_summaries length:", len(company_summaries))
+    st.write("company_summaries length:", len(company_summaries))  # Diagnostic for summaries
 
     output = io.BytesIO()
     wb.save(output)
@@ -158,7 +166,7 @@ if report_file and statement_files:
         show_transactions = st.button("💵 ჩარიცხვები")
 
     # Invoices view
-    if show_invoices or st.session_state['selected_company_id'] is not None:
+    if show_invoices:
         if st.session_state['selected_company_id'] is None:
             st.subheader("📋 კომპანიების ყჩამონათვალი")
             search_code = st.text_input("🔎 ჩაწერე საიდენტიფიკაციო კოდი:", "")
@@ -171,6 +179,7 @@ if report_file and statement_files:
             filtered = company_summaries
             if search_code.strip():
                 filtered = [item for item in company_summaries if item[1] == search_code.strip()]
+
             filtered = sorted(filtered, key=lambda x: x[sort_index], reverse=reverse)
 
             st.markdown("""
@@ -183,6 +192,7 @@ if report_file and statement_files:
             </div>
             """, unsafe_allow_html=True)
 
+            # Dynamic update with container
             detail_container = st.container()
             with detail_container:
                 for name, cid, invoice_sum, paid_sum, diff in filtered:
@@ -199,31 +209,32 @@ if report_file and statement_files:
                     with col5:
                         st.write(f"{diff:,.2f}")
 
-        if st.session_state['selected_company_id'] is not None:
+            st.download_button(
+                label="⬇️ ჩამოტვირთე Excel ფაილი",
+                data=output,
+                file_name="ანგარიშფაქტურები.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        else:
             cid = st.session_state['selected_company_id']
             company_data = purchases_df[purchases_df['საიდენტიფიკაციო კოდი'] == cid]
             st.subheader(f"📌 დეტალური ანგარიშფაქტურები: {cid}")
             st.dataframe(company_data, use_container_width=True)
             if st.button("⬅️ დაბრუნება"):
                 st.session_state['selected_company_id'] = None
-                st.experimental_rerun()
-
-        st.download_button(
-            label="⬇️ ჩამოტვირთე Excel ფაილი",
-            data=output,
-            file_name="ანგარიშფაქტურები.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
 
     # Transactions view
-    if show_transactions or st.session_state['selected_missing_company'] is not None:
+    if show_transactions:
         if st.session_state['selected_missing_company'] is None:
             st.subheader("📋 კომპანიები ანგარიშფაქტურის სიაში არ არიან")
             search_query = st.text_input("🔎 ძებნა (კოდი ან დასახელება):", key="search_query_missing")
             sort_order = st.radio("სორტირება:", ["ზრდადობით", "კლებადობით"], key="sort_order_missing", horizontal=True)
 
+            # Get unique company IDs from bank_df
             bank_company_ids = bank_df['P'].unique()
+            # Get company IDs from purchases_df
             invoice_company_ids = purchases_df['საიდენტიფიკაციო კოდი'].unique()
+            # Find companies in bank_df but not in purchases_df
             missing_company_ids = [cid for cid in bank_company_ids if cid not in invoice_company_ids]
             
             if missing_company_ids:
@@ -236,12 +247,14 @@ if report_file and statement_files:
                     difference = total_amount - invoice_amount
                     missing_data.append([company_name, company_id, total_amount, invoice_amount, difference])
                 
+                # Apply search filter
                 if search_query.strip():
                     missing_data = [item for item in missing_data if 
                                   str(item[1]) == search_query.strip() or 
                                   str(item[0]).lower().find(search_query.lower().strip()) != -1]
                 
-                sort_reverse = sort_order == "კლებადობით"
+                # Apply sort
+                sort_reverse = st.session_state['sort_order_missing'] == "კლებადობით"
                 missing_data.sort(key=lambda x: x[2], reverse=sort_reverse)
 
                 st.markdown("""
@@ -254,6 +267,7 @@ if report_file and statement_files:
                 </div>
                 """, unsafe_allow_html=True)
 
+                # Dynamic update with container
                 detail_container = st.container()
                 with detail_container:
                     for item in missing_data:
@@ -269,12 +283,10 @@ if report_file and statement_files:
                             st.write(f"{item[3]:,.2f}")
                         with col5:
                             st.write(f"{item[4]:,.2f}")
-
-        if st.session_state['selected_missing_company'] is not None:
+        else:
             mid = st.session_state['selected_missing_company']
             transaction_data = bank_df[bank_df['P'] == str(mid)]
             st.subheader(f"📌 ჩარიცხვების ცხრილი: {mid}")
             st.dataframe(transaction_data, use_container_width=True)
             if st.button("⬅️ დაბრუნება"):
                 st.session_state['selected_missing_company'] = None
-                st.experimental_rerun()
